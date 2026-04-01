@@ -158,7 +158,7 @@ async function startAutomation() {
   try {
     const settings = JSON.parse(localStorage.getItem('sekoujimu_settings') || '{}');
     
-    const response = await fetch('http://localhost:3001/api/start', {
+    const response = await fetch('/api/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -203,7 +203,7 @@ let eventSource;
 function connectSSE() {
   if (eventSource) eventSource.close();
   
-  eventSource = new EventSource('http://localhost:3001/events');
+  eventSource = new EventSource('/events');
   
   eventSource.onopen = () => {
     console.log('SSE connection established');
@@ -246,7 +246,7 @@ loginCompleteBtn.addEventListener('click', async () => {
   loginCompleteBtn.innerText = '報告済み';
   
   try {
-    await fetch('http://localhost:3001/api/login-complete', { method: 'POST' });
+    await fetch('/api/login-complete', { method: 'POST' });
     addLog('ログイン完了を報告しました。自動実行を再開します。', 'info');
   } catch (err) {
     addLog(`エラー: ${err.message}`, 'error');

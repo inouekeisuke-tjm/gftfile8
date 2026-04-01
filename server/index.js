@@ -8,10 +8,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the 'dist' directory
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // SSE for real-time logging
 let clients = [];
@@ -135,6 +138,12 @@ app.post('/api/start', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Backend server running at http://localhost:${port}`);
+// For any other request, serve index.html (SPA support)
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path === '/events') return next();
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
 });
