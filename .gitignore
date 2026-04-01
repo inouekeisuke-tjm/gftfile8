@@ -1,0 +1,9 @@
+node_modules/
+temp_downloads/
+downloads/
+.DS_Store
+*.log
+.env
+.firebase/
+dist/
+build/

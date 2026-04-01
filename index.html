@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GFT File | 施工資料自動化</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="header-main">
+          <h1>GFT File</h1>
+          <p>GRAFTEKT 施工資料の自動収集・加工システム</p>
+        </div>
+        <button id="settings-btn" class="icon-btn" title="設定を開く">⚙️ 設定</button>
+      </header>
+      
+      <!-- Report Quick Selector -->
+      <section id="report-grid-section" class="report-grid-section">
+        <h3>📋 登録済みレポートから開始</h3>
+        <div id="report-grid" class="report-grid">
+          <!-- Dynamically generated buttons -->
+          <p class="empty-msg">設定からレポートを登録するとここにボタンが表示されます。</p>
+        </div>
+      </section>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>⚙️ システム設定</h2>
+            <button id="close-settings" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body" id="modal-body">
+            <section class="settings-section">
+              <h3>📝 レポート管理</h3>
+              <div class="report-add-form">
+                <input type="text" id="new-report-name" placeholder="レポート名 (例: キッチン受注)">
+                <input type="text" id="new-report-url" placeholder="レポートのURL">
+                <button id="add-report-btn" class="icon-btn-small">追加</button>
+              </div>
+              <div id="report-list" class="report-list">
+                <!-- Registered reports list -->
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <h3>Salesforce ログイン情報</h3>
+              <div class="field">
+                <label>ユーザーID</label>
+                <input type="text" id="sf-user" placeholder="khinouek2@tjmdesign.com">
+              </div>
+              <div class="field">
+                <label>パスワード</label>
+                <input type="password" id="sf-pass" placeholder="••••••••">
+              </div>
+            </section>
+            
+            <section>
+              <h3>統合版 (GFT) ログイン情報</h3>
+              <div class="field">
+                <label>ユーザーID</label>
+                <input type="text" id="gft-user" placeholder="gftsupport@tjmdesign.com">
+              </div>
+              <div class="field">
+                <label>パスワード</label>
+                <input type="password" id="gft-pass" placeholder="••••••••">
+              </div>
+            </section>
+
+            <section>
+              <h3>保存先設定</h3>
+              <div class="field">
+                <label>ダウンロード先のパス</label>
+                <input type="text" id="download-path" placeholder="C:\Users\inouek2\Downloads">
+                <small>※空欄の場合は標準のダウンロードフォルダになります。</small>
+              </div>
+            </section>
+          </div>
+          <div class="modal-footer">
+            <button id="save-settings" class="primary">設定を保存</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="field manual-input-header">
+          <h3>🔗 直接URLを入力して開始</h3>
+        </div>
+        <div class="field">
+          <label for="sf-url">Salesforce 検索画面のURL</label>
+          <input type="text" id="sf-url" placeholder="https://tjmdesign.lightning.force.com/..." />
+        </div>
+        <div class="field">
+          <label for="property-name">物件名 (自動取得されますが、手動入力で上書きも可能)</label>
+          <input type="text" id="property-name" placeholder="自動取得待ち..." />
+        </div>
+      </div>
+
+      <div class="sidebar">
+      <div class="logo">GFT File</div>
+      <div class="actions">
+        <button id="start-btn">自動実行を開始する</button>
+        <button id="login-complete-btn" class="secondary" disabled>ログイン完了を報告</button>
+      </div>
+
+      <div id="log-container">
+        <div class="log-entry info">
+          <span class="msg">システム準備完了。URLを入力して実行してください。</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
