@@ -141,7 +141,7 @@ app.post('/api/start', async (req, res) => {
 });
 
 // For any other request, serve index.html (SPA support)
-app.get('*', (req, res, next) => {
+app.get('(.*)', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path === '/events') return next();
     res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
