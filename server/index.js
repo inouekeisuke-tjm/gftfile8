@@ -3,6 +3,8 @@ import cors from 'cors';
 import { chromium } from 'playwright';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fsSync from 'fs';
+import archiver from 'archiver';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +48,8 @@ import { runAutomation } from './automation.js';
 import { processPdfs } from './pdf-processor.js';
 import fs from 'fs/promises';
 
+const downloadableFiles = new Map();
+
 let loginResolver;
 
 app.post('/api/login-complete', (req, res) => {
@@ -80,11 +84,12 @@ app.post('/api/start', async (req, res) => {
             throw new Error('処理対象の物件が見つかりませんでした。');
         }
 
+        const sessionId = Date.now().toString();
         const baseDest = (config && config.downloadPath) 
-            ? config.downloadPath 
+            ? path.join(config.downloadPath, `GFT_${sessionId}`)
             : (process.env.NODE_ENV === 'production' 
-                ? '/tmp/downloads' 
-                : path.join(process.env.USERPROFILE || process.env.HOME || '/tmp', 'Downloads'));
+                ? `/tmp/downloads_${sessionId}` 
+                : path.join(process.env.USERPROFILE || process.env.HOME || '/tmp', `GFT_Downloads_${sessionId}`));
 
         let successCount = 0;
 
@@ -132,12 +137,62 @@ app.post('/api/start', async (req, res) => {
             }
         }
 
-        sendLog(`全工程が完了しました。成功: ${successCount} / ${automationResults.length} 件`, 'success');
-        sendLog(`保存先: ${baseDest}`, 'info');
-        
+        if (successCount > 0) {
+            sendLog(`ZIPファイルの作成を開始します...`);
+            const zipFileName = `GFT_Results_${sessionId}.zip`;
+            // Zip is created in the parent folder of baseDest
+            const zipFilePath = path.join(path.dirname(baseDest), zipFileName);
+            
+            await new Promise((resolve, reject) => {
+                const output = fsSync.createWriteStream(zipFilePath);
+                const archive = archiver('zip', { zlib: { level: 9 } });
+
+                output.on('close', resolve);
+                archive.on('error', reject);
+
+                archive.pipe(output);
+                archive.directory(baseDest, 'GFT_Results');
+                archive.finalize();
+            });
+
+            sendLog(`ZIPファイルの作成が完了しました。ダウンロードを開始します！`, 'success');
+            
+            // Register file for download
+            downloadableFiles.set(zipFileName, zipFilePath);
+
+            // Send trigger to frontend
+            const downloadUrl = `/api/download/${zipFileName}`;
+            clients.forEach(c => c.res.write(`data: ${JSON.stringify({ type: 'download_link', url: downloadUrl, message: 'ダウンロードを要求しました' })}\n\n`));
+            
+            // Clean up the initial unzipped folder since we have the zip
+            try {
+                await fs.rm(baseDest, { recursive: true, force: true });
+            } catch (e) {
+                console.error('Failed to cleanup baseDest', e);
+            }
+        }
+
     } catch (error) {
         sendLog(`エラーが発生しました: ${error.message}`, 'error');
     }
+});
+
+// Download Route for generated ZIP
+app.get('/api/download/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = downloadableFiles.get(filename);
+    
+    if (!filePath) {
+        return res.status(404).send('File not found or expired');
+    }
+
+    res.download(filePath, filename, (err) => {
+        if (!err) {
+            // Delete the zip file after successful download to save memory
+            fs.rm(filePath, { force: true }).catch(console.error);
+            downloadableFiles.delete(filename);
+        }
+    });
 });
 
 // For any other request, serve index.html (SPA support)

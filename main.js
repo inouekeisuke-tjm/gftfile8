@@ -231,7 +231,15 @@ function connectSSE() {
       }
     }
 
-    if (data.message.includes('ダウンロード機能を起動') || data.message.includes('成功しました')) {
+    if (data.type === 'download_link') {
+      const a = document.createElement('a');
+      a.href = data.url;
+      a.download = ''; // Let server determine filename
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (data.message.includes('ダウンロード機能を起動') || data.message.includes('ダウンロードを開始')) {
       loginCompleteBtn.disabled = true;
       loginCompleteBtn.classList.remove('active');
     }
