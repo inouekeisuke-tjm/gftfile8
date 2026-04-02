@@ -10,7 +10,7 @@
       {
         "source": "**",
         "run": {
-          "serviceId": "gftfile-service",
+          "serviceId": "gft-file-service",
           "region": "asia-northeast1"
         }
       }

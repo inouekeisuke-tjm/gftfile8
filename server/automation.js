@@ -153,7 +153,9 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
  * メインエントリーポイント
  */
 export async function runAutomation(sfUrl, propertyName, sendLog, waitForLogin, config = {}) {
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ 
+        headless: process.env.NODE_ENV === 'production' 
+    });
     const context = await browser.newContext({ acceptDownloads: true });
     const page = await context.newPage();
 

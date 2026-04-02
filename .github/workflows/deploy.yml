@@ -1,0 +1,61 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: gftfile8
+  REGION: asia-northeast1
+  SERVICE_NAME: gft-file-service
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and Push Docker Image
+        run: |
+          gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
+          # Create Artifact Registry if it doesn't exist
+          gcloud artifacts repositories create gft-repo --repository-format=docker --location=asia-northeast1 || true
+          docker build -t asia-northeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/gft-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} .
+          docker push asia-northeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/gft-repo/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: asia-northeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/gft-repo/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          region: ${{ env.REGION }}
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GFTFILE8 }}
+          channelId: live
+          projectId: ${{ env.PROJECT_ID }}

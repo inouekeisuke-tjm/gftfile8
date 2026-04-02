@@ -82,7 +82,9 @@ app.post('/api/start', async (req, res) => {
 
         const baseDest = (config && config.downloadPath) 
             ? config.downloadPath 
-            : path.join(process.env.USERPROFILE, 'Downloads');
+            : (process.env.NODE_ENV === 'production' 
+                ? '/tmp/downloads' 
+                : path.join(process.env.USERPROFILE || process.env.HOME || '/tmp', 'Downloads'));
 
         let successCount = 0;
 
