@@ -80,10 +80,13 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
             await gftPage.fill('#login-id', user);
             await gftPage.fill('#login-password', pass);
             await gftPage.click('button[type="submit"]');
-            await gftPage.waitForLoadState('networkidle');
+            
+            // ログイン後の画面遷移・描画を安定させるため少し長めに待機
+            await gftPage.waitForTimeout(4000);
+            await gftPage.waitForLoadState('networkidle').catch(() => {});
 
-            // ログイン成功確認
-            if (gftPage.url().includes('login') || await gftPage.locator('#login-id').count() > 0) {
+            // ログイン失敗の明らかなエラー文言がある場合のみエラーにする
+            if (await gftPage.locator('text="パスワードが違います"').count() > 0 || await gftPage.locator('text="ログインに失敗"').count() > 0) {
                 throw new Error('GFTポータルへのログインに失敗しました。ID/Passwordを確認してください。');
             }
         }
