@@ -56,6 +56,7 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
         }
 
         // 3. URL抽出
+        sendLog('WEB受注メールの内容を開き、仕様確認表のリンクを探索しています...');
         const urlRegex = /https:\/\/planning\.tjm-kitchenhouse\.jp\/graftekt\/[^\s"'<>]+/g;
         let targetUrl = null;
         for (const frame of orderEmailPage.frames()) {
@@ -64,7 +65,9 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
             if (urls && urls.length > 0) { targetUrl = urls[0]; break; }
         }
 
-        if (!targetUrl) throw new Error('仕様確認表のURLを抽出できませんでした。');
+        if (!targetUrl) throw new Error('WEB受注メール内に仕様確認表のURLを見つけることができませんでした。');
+        
+        sendLog('仕様確認表のリンクを見つけました。アクセスを開始します...');
 
         // 4. GFTポータル
         const gftPage = await context.newPage();
