@@ -4,10 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GFT File | 施工資料自動化</title>
+    <link rel="icon" type="image/png" href="/fbcn.png" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script type="module">
+      import { checkAuthState } from "/auth.js";
+      checkAuthState((user) => {
+        if (!user) {
+          window.location.href = "/login.html";
+        } else {
+          document.body.style.display = "flex";
+        }
+      });
+    </script>
+    <style>body { display: none; }</style>
   </head>
   <body>
     <div id="app">
@@ -16,7 +28,11 @@
           <h1>GFT File</h1>
           <p>GRAFTEKT 施工資料の自動収集・加工システム</p>
         </div>
-        <button id="settings-btn" class="icon-btn" title="設定を開く">⚙️ 設定</button>
+        <div class="header-actions">
+          <span id="user-display" style="margin-right: 15px; color: #666; font-size: 0.9rem;"></span>
+          <button id="settings-btn" class="icon-btn" title="設定を開く">⚙️ 設定</button>
+          <button id="logout-btn" class="icon-btn logout" title="ログアウト">🚪 ログアウト</button>
+        </div>
       </header>
       
       <!-- Report Quick Selector -->
@@ -102,7 +118,6 @@
       </div>
 
       <div class="sidebar">
-      <div class="logo">GFT File</div>
       <div class="actions">
         <button id="start-btn">自動実行を開始する</button>
         <button id="login-complete-btn" class="secondary" disabled>ログイン完了を報告</button>

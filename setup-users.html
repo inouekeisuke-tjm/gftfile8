@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Setup Users | GFT File</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { padding: 40px; font-family: sans-serif; line-height: 1.6; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #2c3e50; }
+    .status-item { margin-bottom: 10px; padding: 10px; border-radius: 4px; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    #log { margin-top: 20px; font-family: monospace; font-size: 0.9rem; border: 1px solid #eee; padding: 15px; height: 200px; overflow-y: auto; background: #fafafa; }
+    #start-btn { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    #start-btn:disabled { background: #ccc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>初期ユーザー一括登録</h1>
+    <p>以下のユーザーをFirebase Authenticationに登録します：</p>
+    <ul>
+      <li>tsuchiyan@tjmdesign.com / tjmdesign</li>
+      <li>mukasas@tjmdesign.com / tjmdesign</li>
+      <li>inouek2@tjmdesign.com / tjmdesign</li>
+    </ul>
+    <button id="start-btn">登録を開始する</button>
+    <div id="log">ログがここに表示されます...</div>
+    <p style="margin-top: 20px;"><a href="/login.html">← ログイン画面へ戻る</a></p>
+  </div>
+
+  <script type="module">
+    import { registerUser } from "/auth.js";
+
+    const startBtn = document.getElementById('start-btn');
+    const log = document.getElementById('log');
+
+    function addLog(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `status-item ${type}`;
+      entry.innerText = msg;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    const usersToRegister = [
+      { email: 'tsuchiyan@tjmdesign.com', pw: 'tjmdesign' },
+      { email: 'mukasas@tjmdesign.com', pw: 'tjmdesign' },
+      { email: 'inouek2@tjmdesign.com', pw: 'tjmdesign' }
+    ];
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      log.innerHTML = '';
+      addLog('登録プロセスを開始しています...');
+
+      for (const u of usersToRegister) {
+        addLog(`${u.email} を登録中...`);
+        const result = await registerUser(u.email, u.pw);
+        if (result.success) {
+          addLog(`${u.email} の登録に成功しました。`, 'success');
+        } else {
+          addLog(`${u.email} の登録に失敗しました: ${result.error}`, 'error');
+        }
+      }
+
+      addLog('全プロセスの完了。既に登録済みの場合はエラー（email-already-in-use）になりますが問題ありません。');
+      startBtn.innerText = '完了';
+    });
+  </script>
+</body>
+</html>

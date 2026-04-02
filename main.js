@@ -1,3 +1,5 @@
+import { logout, checkAuthState } from "/auth.js";
+
 const startBtn = document.getElementById('start-btn');
 const loginCompleteBtn = document.getElementById('login-complete-btn');
 const sfUrlInput = document.getElementById('sf-url');
@@ -237,6 +239,21 @@ function connectSSE() {
 }
 
 connectSSE();
+
+const logoutBtn = document.getElementById('logout-btn');
+const userDisplay = document.getElementById('user-display');
+
+checkAuthState((user) => {
+  if (user) {
+    userDisplay.innerText = user.email;
+  }
+});
+
+logoutBtn.addEventListener('click', () => {
+  if (confirm('ログアウトしますか？')) {
+    logout();
+  }
+});
 
 startBtn.addEventListener('click', startAutomation);
 
