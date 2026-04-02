@@ -211,48 +211,46 @@ export async function runAutomation(sfUrl, propertyName, sendLog, waitForLogin, 
         await page.waitForTimeout(3000);
 
         // 3. 物件リストの抽出 (高度なロジック)
-        sendLog('レポートから物件リストを抽出しています...');
-        const propertyLinks = await page.evaluate(() => {
-            const prefectures = ['都', '道', '府', '県'];
-            const rows = Array.from(document.querySelectorAll('table.reportTable tr'));
-            const list = [];
-            const seenUrls = new Set();
+        sendLog('レポートから物件リストを抽出しています（数秒お待ちください）...');
+        // レポートのデータテーブルが完全に描画されるまで少し長めに待機
+        await page.waitForTimeout(5000);
+        
+        const propertyLinks = [];
+        const seenUrls = new Set();
 
-            rows.forEach(row => {
-                const cells = Array.from(row.querySelectorAll('td'));
-                cells.forEach((cell, idx) => {
-                    const text = cell.innerText.trim();
-                    // ロジックA: 「様」「邸」を直接含む
-                    const link = cell.querySelector('a');
-                    if (link && (link.innerText.includes('様') || link.innerText.includes('邸'))) {
-                        const url = link.href;
-                        if (!seenUrls.has(url)) {
-                            list.push({ name: link.innerText.trim(), url: url });
-                            seenUrls.add(url);
-                        }
-                    }
-                    // ロジックB: 右隣のセルが都道府県名を含む住所
-                    const nextCell = cells[idx + 1];
-                    if (nextCell) {
-                        const nextText = nextCell.innerText.trim();
-                        const isAddress = prefectures.some(p => nextText.includes(p)) && nextText.length > 2;
-                        if (isAddress && link) {
-                            const url = link.href;
-                            if (!seenUrls.has(url)) {
-                                list.push({ name: link.innerText.trim(), url: url });
-                                seenUrls.add(url);
+        const frames = page.frames();
+        for (const frame of frames) {
+            try {
+                // PlaywrightのLocatorはShadow DOMを自動で貫通します
+                const links = await frame.locator('a').elementHandles();
+                for (const link of links) {
+                    const text = await link.innerText().catch(() => '');
+                    if (text && (text.includes('様') || text.includes('邸'))) {
+                        const href = await link.getAttribute('href').catch(() => null);
+                        if (href && !href.includes('javascript:')) {
+                            // 相対パスを絶対URLに変換
+                            const fullUrl = new URL(href, page.url()).href;
+                            if (!seenUrls.has(fullUrl)) {
+                                propertyLinks.push({ name: text.trim(), url: fullUrl });
+                                seenUrls.add(fullUrl);
                             }
                         }
                     }
-                });
-            });
-            return list;
-        });
+                }
+            } catch (e) {
+                // フレームへのアクセスエラー（クロスオリジン等）は無視
+                continue;
+            }
+        }
 
         if (propertyLinks.length === 0) {
-            sendLog('物件を特定できませんでした。URLを直接入力してください。', 'warning');
-            if (propertyName) propertyLinks.push({ name: propertyName, url: page.url() });
-            else throw new Error('物件リストを抽出できませんでした。');
+            sendLog('【抽出結果0件】レポート内に「〇〇 様」や「〇〇 邸」のリンクが見つかりませんでした。', 'warning');
+            if (propertyName) {
+                sendLog(`※物件名[${propertyName}]が直接入力されているため、単独物件として処理を続行します。`, 'info');
+                propertyLinks.push({ name: propertyName, url: page.url() });
+            } else {
+                throw new Error('物件リストを抽出できませんでした。Salesforceレポート画面が正しく開かれているか確認してください。');
+            }
         }
 
         sendLog(`${propertyLinks.length}件の物件を検出しました。順番に処理を開始します。`, 'success');
