@@ -72,10 +72,17 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
 
         if (await gftPage.locator('#login-id').count() > 0 || gftPage.url().includes('login')) {
             sendLog('GFTログインを実行します...');
-            await gftPage.fill('#login-id', config.gftUser || 'gftsupport@tjmdesign.com');
-            await gftPage.fill('#login-password', config.gftPass || 'azusawa343');
+            const user = (config && config.gftUser) ? config.gftUser : 'gftsupport@tjmdesign.com';
+            const pass = (config && config.gftPass) ? config.gftPass : 'azusawa343';
+            await gftPage.fill('#login-id', user);
+            await gftPage.fill('#login-password', pass);
             await gftPage.click('button[type="submit"]');
             await gftPage.waitForLoadState('networkidle');
+
+            // ログイン成功確認
+            if (gftPage.url().includes('login') || await gftPage.locator('#login-id').count() > 0) {
+                throw new Error('GFTポータルへのログインに失敗しました。ID/Passwordを確認してください。');
+            }
         }
 
         // 5. ダウンロード
@@ -116,12 +123,17 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
             }
         };
 
+        let fileDownloadCount = 0;
+
         for (const t of targets) {
             const res = await findInAllFrames(gftPage, t);
             if (res) {
                 try {
                     const saved = await handleDownload(res.locator, t);
-                    if (saved) sendLog(`取得成功: ${t}`);
+                    if (saved) {
+                        sendLog(`取得成功: ${t}`);
+                        fileDownloadCount++;
+                    }
                 } catch (e) { sendLog(`取得失敗: ${t}`, 'warning'); }
             }
         }
@@ -131,13 +143,20 @@ async function processSingleProperty(context, propertyInfo, sendLog, config) {
         for (const f of gftPage.frames()) {
             const btn = f.locator(rhXpath).first();
             if (await btn.count() > 0) {
-                await handleDownload(btn, 'レンジフード');
-                sendLog('取得成功: レンジフード機器承認図');
+                const saved = await handleDownload(btn, 'レンジフード');
+                if (saved) {
+                    sendLog('取得成功: レンジフード機器承認図');
+                    fileDownloadCount++;
+                }
                 break;
             }
         }
 
-        sendLog(`物件「${propertyName}」の全資料取得が完了しました。`, 'success');
+        if (fileDownloadCount === 0) {
+            throw new Error('取得できるPDF資料が見つかりませんでした (正しく画面が遷移していない可能性があります)。');
+        }
+
+        sendLog(`物件「${propertyName}」の全資料取得が完了しました。(${fileDownloadCount}件)`, 'success');
         await page.close();
         await gftPage.close();
         return { downloadDir, propertyName };
