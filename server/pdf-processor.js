@@ -112,6 +112,19 @@ export async function processPdfs(downloadDir, propertyName, sendLog = console.l
         const finalPath = path.join(downloadDir, finalMergedName);
         await fs.writeFile(finalPath, pdfBytes);
         sendLog(`結合完了: ${finalMergedName} (合計${mergeCount}ファイルを統合)`, 'success');
+        
+        // ⑨ 不要になった部品ファイルのクリーンアップ
+        // finalFilesAfterRename（リネーム後のフォルダ状態）のうち、
+        // 結合対象（mergeOrderに含まれる種類）と判定されたものを全て削除
+        const filesToDelete = finalFilesAfterRename.filter(f => mergeOrder.includes(getKind(f)));
+        for (const file of filesToDelete) {
+            try {
+                await fs.unlink(path.join(downloadDir, file));
+            } catch (e) {
+                console.warn(`一時ファイルの削除に失敗しました: ${file}`, e);
+            }
+        }
+
         return finalPath;
     } else {
         sendLog('結合対象のファイルが見つかりませんでした。', 'warning');
